@@ -1,0 +1,6 @@
+geometry_msgs/Pose[] grasp_poses
+int32 base_num
+int32 joint_num
+---
+harmonious_msgs/BaseConf[] base_confs
+harmonious_msgs/JointConf[] joint_confs

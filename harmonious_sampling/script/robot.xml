@@ -1,0 +1,10 @@
+<Environment>
+  <camtrans>-0.047832 -0.906454 2.173905</camtrans>
+  <camrotationaxis>-0.945086 -0.324696 0.037207 136.832314</camrotationaxis>
+
+  <Robot file="robots/pr2-beta-static.zae">
+    <translation>0.0 0.0 0.0</translation>
+    <quat>1.0 0 0 0</quat>
+  </Robot>
+
+</Environment>
