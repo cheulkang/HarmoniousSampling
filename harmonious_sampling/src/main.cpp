@@ -91,6 +91,20 @@ int main(int argc, char** argv) {
         bounds.setHigh(i, b[0].max_position_);
     }
 
+    // Set joint type
+    const std::vector<const moveit::core::JointModel*> joint_models = joint_model_group->getActiveJointModels();
+    std::vector<bool> isContinuous;
+    for (size_t joint_i = 0; joint_i < joint_models.size(); joint_i++) {
+        const moveit::core::JointModel *joint_model = joint_models[joint_i];
+
+        if (joint_model->getType() == moveit::core::JointModel::REVOLUTE) {
+            isContinuous.push_back(true);
+        }
+        else{
+            isContinuous.push_back(false);
+        }
+    }
+
     //// Please set your boundaries for base space.
     bounds.setLow(0, -2.5);
     bounds.setHigh(0, 2.5);
@@ -168,7 +182,7 @@ int main(int argc, char** argv) {
     simple_setup->setStartAndGoalStates(q_start, q_goal);
 
     // set planner
-    simple_setup->setPlanner(ompl::base::PlannerPtr(new ompl::geometric::HarmoniousLazyPRMstarMulti(simple_setup->getSpaceInformation(), h)));
+    simple_setup->setPlanner(ompl::base::PlannerPtr(new ompl::geometric::HarmoniousLazyPRMstarMulti(simple_setup->getSpaceInformation(), h, isContinuous)));
     simple_setup->solve(ompl::base::timedPlannerTerminationCondition(10.0));
 
     if (simple_setup->haveSolutionPath()) {

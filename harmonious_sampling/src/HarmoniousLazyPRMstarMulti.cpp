@@ -37,6 +37,7 @@ namespace ompl {
 
 ompl::geometric::HarmoniousLazyPRMstarMulti::HarmoniousLazyPRMstarMulti(const base::SpaceInformationPtr &si,
                                                                         base::HarmoniousSampler &hs,
+                                                                        const std::vector<bool> &isContinuous,
                                                                         bool starStrategy) :
         base::Planner(si, "HarmoniousLazyPRMstarMulti"),
         starStrategy_(starStrategy),
@@ -58,7 +59,8 @@ ompl::geometric::HarmoniousLazyPRMstarMulti::HarmoniousLazyPRMstarMulti(const ba
         increaseIterations_(0),
         BisectionCC_(true),
         rewireFactor_(1.5),
-        hs_(hs)
+        hs_(hs),
+        isContinuous_(isContinuous)
 {
     specs_.recognizedGoal = base::GOAL_SAMPLEABLE_REGION;
     specs_.approximateSolutions = false;
@@ -213,9 +215,9 @@ void ompl::geometric::HarmoniousLazyPRMstarMulti::clear() {
 }
 
 void ompl::geometric::HarmoniousLazyPRMstarMulti::freeMemory() {
-            foreach (Vertex v, boost::vertices(g_)) {
-                    si_->freeState(stateProperty_[v]);
-                }
+    foreach (Vertex v, boost::vertices(g_)) {
+        si_->freeState(stateProperty_[v]);
+    }
 
     g_.clear();
 }
@@ -244,19 +246,19 @@ ompl::geometric::HarmoniousLazyPRMstarMulti::Vertex ompl::geometric::HarmoniousL
 
         nnM_->nearestK(m, max_number_of_neighbors, neighbors);
 
-                foreach (Vertex n, neighbors) {
-                        const double weight = distanceFunctionHarmonious(n, m);
+        foreach (Vertex n, neighbors) {
+            const double weight = distanceFunctionHarmonious(n, m);
 
-                        ompl::base::Cost cost_weight(weight);
-                        const Graph::edge_property_type properties(cost_weight);
+            ompl::base::Cost cost_weight(weight);
+            const Graph::edge_property_type properties(cost_weight);
 
-                        neighborProperty_[m].push_back(type_neighbor(n, weight));
-                        neighborProperty_[n].push_back(type_neighbor(m, weight));
+            neighborProperty_[m].push_back(type_neighbor(n, weight));
+            neighborProperty_[n].push_back(type_neighbor(m, weight));
 
-                        // If collision-free or optimized well,
-                        const Edge &e = boost::add_edge(n, m, properties, g_).first;
-                        edgeValidityProperty_[e] = VALIDITY_UNKNOWN;
-                    }
+            // If collision-free or optimized well,
+            const Edge &e = boost::add_edge(n, m, properties, g_).first;
+            edgeValidityProperty_[e] = VALIDITY_UNKNOWN;
+        }
 
         // base regions
         max_number_of_neighbors = std::ceil(k_rrgConstant_ * log(static_cast<double>(bSize) + 1u));
@@ -266,19 +268,19 @@ ompl::geometric::HarmoniousLazyPRMstarMulti::Vertex ompl::geometric::HarmoniousL
 
         nnB_->nearestK(m, max_number_of_neighbors, neighbors);
 
-                foreach (Vertex n, neighbors) {
-                        const double weight = distanceFunctionHarmonious(n, m);
+        foreach (Vertex n, neighbors) {
+            const double weight = distanceFunctionHarmonious(n, m);
 
-                        ompl::base::Cost cost_weight(weight);
-                        const Graph::edge_property_type properties(cost_weight);
+            ompl::base::Cost cost_weight(weight);
+            const Graph::edge_property_type properties(cost_weight);
 
-                        neighborProperty_[m].push_back(type_neighbor(n, weight));
-                        neighborProperty_[n].push_back(type_neighbor(m, weight));
+            neighborProperty_[m].push_back(type_neighbor(n, weight));
+            neighborProperty_[n].push_back(type_neighbor(m, weight));
 
-                        // If collision-free or optimized well,
-                        const Edge &e = boost::add_edge(n, m, properties, g_).first;
-                        edgeValidityProperty_[e] = VALIDITY_UNKNOWN;
-                    }
+            // If collision-free or optimized well,
+            const Edge &e = boost::add_edge(n, m, properties, g_).first;
+            edgeValidityProperty_[e] = VALIDITY_UNKNOWN;
+        }
 
         nnM_->add(m);
     }
@@ -290,19 +292,19 @@ ompl::geometric::HarmoniousLazyPRMstarMulti::Vertex ompl::geometric::HarmoniousL
 
         nn_->nearestK(m, max_number_of_neighbors, neighbors);
 
-                foreach (Vertex n, neighbors) {
-                        const double weight = distanceFunctionHarmonious(n, m);
+        foreach (Vertex n, neighbors) {
+            const double weight = distanceFunctionHarmonious(n, m);
 
-                        ompl::base::Cost cost_weight(weight);
-                        const Graph::edge_property_type properties(cost_weight);
+            ompl::base::Cost cost_weight(weight);
+            const Graph::edge_property_type properties(cost_weight);
 
-                        neighborProperty_[m].push_back(type_neighbor(n, weight));
-                        neighborProperty_[n].push_back(type_neighbor(m, weight));
+            neighborProperty_[m].push_back(type_neighbor(n, weight));
+            neighborProperty_[n].push_back(type_neighbor(m, weight));
 
-                        // If collision-free or optimized well,
-                        const Edge &e = boost::add_edge(n, m, properties, g_).first;
-                        edgeValidityProperty_[e] = VALIDITY_UNKNOWN;
-                    }
+            // If collision-free or optimized well,
+            const Edge &e = boost::add_edge(n, m, properties, g_).first;
+            edgeValidityProperty_[e] = VALIDITY_UNKNOWN;
+        }
 
         nnB_->add(m);
     }
@@ -443,14 +445,14 @@ void ompl::geometric::HarmoniousLazyPRMstarMulti::Decrease(const Vertex &v) {
 
     // Initialize cost of v, i.e., finding best parent vertex in G(g_).
     BGL_FORALL_OUTEDGES(v, e, g_, Graph) {
-            Vertex w = target(e, g_);
-            double weight = weightProperty_[e].value();
+        Vertex w = target(e, g_);
+        double weight = weightProperty_[e].value();
 
-            if (costProperty_[v] > costProperty_[w] + weight) {
-                predecessorProperty_[v] = w;
-                costProperty_[v] = costProperty_[w] + weight;
-            }
+        if (costProperty_[v] > costProperty_[w] + weight) {
+            predecessorProperty_[v] = w;
+            costProperty_[v] = costProperty_[w] + weight;
         }
+    }
 
     // No need to invoke cancelAdoption since v is newly sampled.
     if (predecessorProperty_[v] != NULL) {
@@ -473,19 +475,19 @@ void ompl::geometric::HarmoniousLazyPRMstarMulti::Decrease(const Vertex &v) {
         }
 
         BGL_FORALL_OUTEDGES(vert, e, g_, Graph) {
-                Vertex w = target(e, g_);
-                double weight = weightProperty_[e].value();
-                double cost_w = costProperty_[w];
+            Vertex w = target(e, g_);
+            double weight = weightProperty_[e].value();
+            double cost_w = costProperty_[w];
 
-                if (cost_w > cost + weight) {
-                    costProperty_[w] = cost + weight;
-                    cancelAdoption(w);
+            if (cost_w > cost + weight) {
+                costProperty_[w] = cost + weight;
+                cancelAdoption(w);
 
-                    predecessorProperty_[w] = vert;
-                    childrenProperty_[vert]->push_back(w);
-                    pq.push(weight_vertex(-costProperty_[w], w));
-                }
+                predecessorProperty_[w] = vert;
+                childrenProperty_[vert]->push_back(w);
+                pq.push(weight_vertex(-costProperty_[w], w));
             }
+        }
     }
 
     // Now, DSPT is stable.
@@ -569,18 +571,18 @@ void ompl::geometric::HarmoniousLazyPRMstarMulti::Increase(const Vertex vs) {
         cancelAdoption(reds[i]);
 
         BGL_FORALL_OUTEDGES(reds[i], e, g_, Graph) {
-                Vertex w = target(e, g_);
-                double weight = weightProperty_[e].value();
+            Vertex w = target(e, g_);
+            double weight = weightProperty_[e].value();
 
-                if (colorProperty_[w] == RED) {
-                    continue;  // If red, put aside for a while.
-                }
-
-                if (costProperty_[reds[i]] > costProperty_[w] + weight) {
-                    costProperty_[reds[i]] = costProperty_[w] + weight;
-                    predecessorProperty_[reds[i]] = w;
-                }
+            if (colorProperty_[w] == RED) {
+                continue;  // If red, put aside for a while.
             }
+
+            if (costProperty_[reds[i]] > costProperty_[w] + weight) {
+                costProperty_[reds[i]] = costProperty_[w] + weight;
+                predecessorProperty_[reds[i]] = w;
+            }
+        }
 
         if (predecessorProperty_[reds[i]] != NULL) {
             childrenProperty_[predecessorProperty_[reds[i]]]->push_back(reds[i]);
@@ -603,23 +605,23 @@ void ompl::geometric::HarmoniousLazyPRMstarMulti::Increase(const Vertex vs) {
         }
 
         BGL_FORALL_OUTEDGES(vert, e, g_, Graph) {
-                Vertex w = target(e, g_);
-                double weight = weightProperty_[e].value();
+            Vertex w = target(e, g_);
+            double weight = weightProperty_[e].value();
 
-                if (colorProperty_[w] != RED) {
-                    continue;  // If not red, then skip.
-                }
-
-                if (cost + weight < costProperty_[w]) {
-                    costProperty_[w] = cost + weight;
-
-                    cancelAdoption(w);
-
-                    predecessorProperty_[w] = vert;
-                    childrenProperty_[vert]->push_back(w);
-                    pq.push(weight_vertex(-costProperty_[w], w));
-                }
+            if (colorProperty_[w] != RED) {
+                continue;  // If not red, then skip.
             }
+
+            if (cost + weight < costProperty_[w]) {
+                costProperty_[w] = cost + weight;
+
+                cancelAdoption(w);
+
+                predecessorProperty_[w] = vert;
+                childrenProperty_[vert]->push_back(w);
+                pq.push(weight_vertex(-costProperty_[w], w));
+            }
+        }
     }
 
     // The end!
@@ -723,8 +725,10 @@ double ompl::geometric::HarmoniousLazyPRMstarMulti::distanceFunctionBase(const b
     for (int i = 0; i < NUM_BASE_DOF; i++) {
         double dd = fabs(ca[i]-cb[i]);
 
-        if (dd > boost::math::constants::pi<double>() && i == 2) {
-            dd = 2.0 * boost::math::constants::pi<double>() - dd;
+        if(isContinuous_[i]) {
+            if (dd > boost::math::constants::pi<double>()) {
+                dd = 2.0 * boost::math::constants::pi<double>() - dd;
+            }
         }
 
         dist += hs_.params_.weights_[i] * dd * hs_.params_.weights_[i] * dd;
@@ -743,8 +747,10 @@ double ompl::geometric::HarmoniousLazyPRMstarMulti::distanceFunctionJoints(const
     for (int i = NUM_BASE_DOF; i < ca.size(); i++) {
         double dd = fabs(ca[i]-cb[i]);
 
-        if (dd > boost::math::constants::pi<double>()) {
-            dd = 2.0 * boost::math::constants::pi<double>() - dd;
+        if(isContinuous_[i+3]){
+            if (dd > boost::math::constants::pi<double>()) {
+                dd = 2.0 * boost::math::constants::pi<double>() - dd;
+            }
         }
 
         dist += hs_.params_.weights_[i] * dd * hs_.params_.weights_[i] * dd;
@@ -780,7 +786,8 @@ bool ompl::geometric::HarmoniousLazyPRMstarMulti::checkMotion(base::State *s1, b
             unsigned int mid;
 
             mid = (range.first + range.second) / 2;
-            si_->getStateSpace()->interpolate(s1, s2, (double)mid / (double)nd, test);
+            interpolate(s1, s2, (double)mid / (double)nd, test);
+//            si_->getStateSpace()->interpolate(s1, s2, (double)mid / (double)nd, test);
 
             if (!si_->isValid(test)) {
                 result = false;
@@ -802,4 +809,36 @@ bool ompl::geometric::HarmoniousLazyPRMstarMulti::checkMotion(base::State *s1, b
 unsigned int ompl::geometric::HarmoniousLazyPRMstarMulti::validSegmentCount_compare(const double dist,
                                                                                     const double longestValidSegment) const {
     return si_->getStateSpace()->getValidSegmentCountFactor() * (unsigned int)ceil(dist / longestValidSegment);
+}
+
+void ompl::geometric::HarmoniousLazyPRMstarMulti::interpolate(const base::State *from, const base::State *to, const double t, base::State *state) const
+{
+    const base::RealVectorStateSpace::StateType *rfrom = static_cast<const base::RealVectorStateSpace::StateType*>(from);
+    const base::RealVectorStateSpace::StateType *rto = static_cast<const base::RealVectorStateSpace::StateType*>(to);
+    const base::RealVectorStateSpace::StateType *rstate = static_cast<base::RealVectorStateSpace::StateType*>(state);
+    for (unsigned int i = 0 ; i < isContinuous_.size() ; ++i){
+        if(isContinuous_[i]){
+            double diff = rto->values[i] - rfrom->values[i];
+            if (fabs(diff) <= boost::math::constants::pi<double>())
+                rstate->values[i] = rfrom->values[i] + diff * t;
+            else
+            {
+                double &v = rstate->values[i];
+                if (diff > 0.0)
+                    diff = 2.0 * boost::math::constants::pi<double>() - diff;
+                else
+                    diff = -2.0 * boost::math::constants::pi<double>() - diff;
+                v = rfrom->values[i] - diff * t;
+                // input states are within bounds, so the following check is sufficient
+                if (v > boost::math::constants::pi<double>())
+                    v -= 2.0 * boost::math::constants::pi<double>();
+                else
+                if (v < -boost::math::constants::pi<double>())
+                    v += 2.0 * boost::math::constants::pi<double>();
+            }
+        }
+        else{
+            rstate->values[i] = rfrom->values[i] + (rto->values[i] - rfrom->values[i]) * t;
+        }
+    }
 }

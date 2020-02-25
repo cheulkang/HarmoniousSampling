@@ -96,19 +96,19 @@ namespace ompl {
                     boost::vecS, boost::listS, boost::undirectedS,
                     // Vertex properties.
                     boost::property < vertex_state_t, base::State *,
-                            boost::property < boost::vertex_index_t, unsigned long int,
-                                    boost::property < vertex_flags_t, unsigned int,
-                                            boost::property < vertex_radius_t, double,
-                                                    boost::property < vertex_witness_t, base::State *,
-                                                            boost::property < vertex_cost_t, double,
-                                                                    boost::property < vertex_children_t, std::vector<Vertex> *,
-                                                                            boost::property < vertex_neighbors_t, std::vector<type_neighbor>,
-                                                                                    boost::property < boost::vertex_color_t, unsigned int,
-                                                                                            boost::property < boost::vertex_predecessor_t, Vertex,
-                                                                                                    boost::property < boost::vertex_rank_t, unsigned long int > > > > > > > > > > >,
-                    // Edge properties.
-                    boost::property < boost::edge_weight_t, base::Cost,
-                            boost::property < edge_flags_t, unsigned int > >
+                    boost::property < boost::vertex_index_t, unsigned long int,
+                    boost::property < vertex_flags_t, unsigned int,
+                    boost::property < vertex_radius_t, double,
+                    boost::property < vertex_witness_t, base::State *,
+                    boost::property < vertex_cost_t, double,
+                    boost::property < vertex_children_t, std::vector<Vertex> *,
+            boost::property < vertex_neighbors_t, std::vector<type_neighbor>,
+            boost::property < boost::vertex_color_t, unsigned int,
+                    boost::property < boost::vertex_predecessor_t, Vertex,
+                    boost::property < boost::vertex_rank_t, unsigned long int > > > > > > > > > > >,
+            // Edge properties.
+            boost::property < boost::edge_weight_t, base::Cost,
+            boost::property < edge_flags_t, unsigned int > >
             > Graph;
 
             /** @brief The type for an edge in the roadmap. */
@@ -124,6 +124,7 @@ namespace ompl {
             /** \brief Constructor */
             HarmoniousLazyPRMstarMulti(const base::SpaceInformationPtr &si,
                                        base::HarmoniousSampler &hs,
+                                       const std::vector<bool> &isContinuous,
                                        bool starStrategy = false);
 
             virtual ~HarmoniousLazyPRMstarMulti();
@@ -250,6 +251,7 @@ namespace ompl {
 
             bool checkMotion(base::State *s1, base::State *s2) const;
             unsigned int validSegmentCount_compare(const double dist, const double longestValidSegment) const;
+            void interpolate(const base::State *from, const base::State *to, const double t, base::State *state) const;
 
             boost::tuple<double, double, double> toEulerAngle(double w, double x, double y, double z) const;
             boost::tuple<double, double, double, double> toQuaternion(double pitch, double roll, double yaw) const;
@@ -350,6 +352,7 @@ namespace ompl {
             void setRewireFactor(double v) { rewireFactor_ = v; }
 
             base::HarmoniousSampler                                &hs_;
+            const std::vector<bool>                                &isContinuous_;
         };
 
     }
